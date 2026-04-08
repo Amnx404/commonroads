@@ -1,2 +1,7 @@
 # Generated simulation artifacts
 outputs/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
