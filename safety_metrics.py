@@ -160,36 +160,3 @@ def compute_metrics(scenario: Scenario) -> list[FrameMetrics]:
         results.append(frame)
 
     return results
-
-
-def aggregate_by_parameter(
-    param_values: list[float],
-    all_metrics:  list[list[FrameMetrics]],
-) -> dict:
-    """
-    Summarise safety across a sweep of a single parameter.
-
-    Returns a dict with keys:
-      'params'        – list of param values
-      'mean_min_ttc'  – per-run mean of per-frame min-TTC
-      'pct_unsafe'    – % of frames with at least one pair TTC < 3 s
-      'max_drac'      – per-run max DRAC
-    """
-    mean_min_ttc = []
-    pct_unsafe   = []
-    max_drac_list = []
-
-    for frames in all_metrics:
-        min_ttcs = [f.min_ttc for f in frames]
-        mean_min_ttc.append(float(np.mean(min_ttcs)))
-        pct_unsafe.append(
-            100.0 * sum(1 for f in frames if f.n_unsafe_pairs > 0) / max(len(frames), 1)
-        )
-        max_drac_list.append(max(f.max_drac for f in frames))
-
-    return {
-        "params":       param_values,
-        "mean_min_ttc": mean_min_ttc,
-        "pct_unsafe":   pct_unsafe,
-        "max_drac":     max_drac_list,
-    }
