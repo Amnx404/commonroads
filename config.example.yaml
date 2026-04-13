@@ -1,27 +1,20 @@
-﻿# Example configs for `uv run python run.py <this-file>.yaml`
-# Paths in cr_xml are relative to this YAML file's directory.
+﻿# Example config: copy and set scenario.cr_xml (path relative to this file).
 
-# Cropped Frankfurt example (random traffic on that map): config.frankfurt_shorter.yaml
-
-# --- Prepackaged CommonRoad + SUMO folder (bundled *.sumo.cfg next to XML) ---
 scenario:
   kind: folder
   cr_xml: path/to/scenario.cr.xml
-  patch_incoming: true   # rewrite duplicate incoming IDs to a .patched.xml copy
+  patch_incoming: true
 
 sumo:
-  mode: bundled # bundled | random
+  mode: bundled   # bundled | random
   steps: 300
-  # random-only (ignored for bundled): random_density_scale (default 1), random_seed, random_map_matching_delta
+  # random-only: random_density_scale (>1 = denser), random_seed, random_map_matching_delta
 
-# Each run writes under: output.dir / [output.group /] {name}_{steps}steps_{YYYYMMDD_HHMMSS} /
-#  - name: output.name, else output.subfolder, else scenario_id (folder) or "synthetic_sweep"
-#  - Turn off timestamp or steps in the folder name if you need stable paths.
 output:
   dir: outputs/run
-  group: null            # optional: nest runs under this subfolder of dir (e.g. "Frankfurt_batch")
-  name: null             # optional: override the base name in the run folder (else subfolder or scenario id)
-  subfolder: null        # legacy alias for name when name is unset
+  group: null
+  name: null
+  subfolder: null
   clean: false
   timestamp_folder: true
   include_steps_in_folder_name: true
@@ -30,7 +23,7 @@ plot:
   figsize_in: [16.0, 6.0]
   dpi: 150
   vertical_scale: 10.0
-  view_fraction: 0.35    # central fraction of lanelet bbox; null = full map
+  view_fraction: 0.35
   gif_target_frames: 72
   gif_fps: 12.0
   gif_dpi: 85
@@ -44,23 +37,3 @@ metrics:
   enabled: true
   csv_name: metrics.csv
   plot_name: metrics.png
-  aggregate_synthetic: true
-  aggregate_plot_name: accident_metrics_vs_curvature.png
-  aggregate_csv_name: curvature_sweep_metrics.csv
-
-# --- Parametric merge sweep (SUMO RANDOM traffic; sumo.mode must be random) ---
-# scenario:
-#   kind: synthetic
-# synthetic:
-#   merge_lengths: [120.0]
-#   curvatures: [0.3, 0.5]
-#   n_main_vehicles: 0
-#   n_ramp_vehicles: 0
-#   main_speed: 28.0
-#   ramp_speed: 22.0
-# sumo:
-#   mode: random
-#   steps: 200
-# output:
-#   dir: outputs/run
-#   subfolder: my_sweep

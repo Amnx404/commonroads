@@ -1,5 +1,8 @@
-# Generated simulation artifacts
+﻿# Generated simulation artifacts
 outputs/
 
 # uv / Python environment
 .venv/
+
+__pycache__/
+*.py[cod]

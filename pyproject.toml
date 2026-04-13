@@ -1,7 +1,7 @@
 [project]
 name = "commonroads"
 version = "0.1.0"
-description = "CommonRoad merge scenario experiments"
+description = "CommonRoad SUMO runs from YAML; map visualise and interactive crop"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -14,11 +14,3 @@ dependencies = [
     "pyyaml>=6.0",
     "scipy>=1.11",
 ]
-
-[dependency-groups]
-dev = [
-    "ipykernel>=6.29",
-]
-
-[tool.uv]
-default-groups = ["dev"]

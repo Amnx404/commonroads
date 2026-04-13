@@ -14,7 +14,7 @@ scenario:
 sumo:
   mode: random
   steps: 1000
-  # >1.0 increases random-mode flow spawn rates (denser traffic).
+  # >1.0 = denser random traffic (shorter mean time between vehicle insertions).
   random_density_scale: 2.5
   random_seed: 1234
 
@@ -42,4 +42,3 @@ metrics:
   enabled: true
   csv_name: metrics.csv
   plot_name: metrics.png
-  aggregate_synthetic: false

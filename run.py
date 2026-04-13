@@ -6,7 +6,6 @@ import argparse
 import csv
 import shutil
 import xml.etree.ElementTree as ET
-from collections import defaultdict
 from datetime import datetime
 from copy import deepcopy
 from pathlib import Path
@@ -40,14 +39,6 @@ def default_config() -> dict[str, Any]:
             "kind": "folder",
             "cr_xml": None,
             "patch_incoming": True,
-        },
-        "synthetic": {
-            "merge_lengths": [80.0, 120.0, 160.0],
-            "curvatures": [0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.95],
-            "n_main_vehicles": 0,
-            "n_ramp_vehicles": 0,
-            "main_speed": 28.0,
-            "ramp_speed": 22.0,
         },
         "sumo": {
             "mode": "bundled",
@@ -83,9 +74,6 @@ def default_config() -> dict[str, Any]:
             "enabled": True,
             "csv_name": "metrics.csv",
             "plot_name": "metrics.png",
-            "aggregate_synthetic": True,
-            "aggregate_plot_name": "accident_metrics_vs_curvature.png",
-            "aggregate_csv_name": "curvature_sweep_metrics.csv",
         },
     }
 
@@ -329,85 +317,6 @@ def _plot_metrics_single(results: list[ScenarioSafety], out_path: Path, figsize:
     return out_path.resolve()
 
 
-def _plot_metrics_synthetic_multi(
-    results: list[ScenarioSafety], out_path: Path, figsize: tuple[float, float]
-) -> Path:
-    by_l: dict[float, list[ScenarioSafety]] = defaultdict(list)
-    for r in results:
-        by_l[r.merge_length].append(r)
-    lengths = sorted(by_l.keys())
-    fig, axes = plt.subplots(2, 3, figsize=figsize)
-    fig.suptitle("SUMO safety vs curvature (one curve per L)", fontsize=11, y=1.02)
-    cmap = plt.cm.tab10(np.linspace(0, 1, max(len(lengths), 1)))
-
-    def _series(ax, ykey: str) -> None:
-        for i, L in enumerate(lengths):
-            series = sorted(by_l[L], key=lambda x: x.curvature)
-            kappas = [s.curvature for s in series]
-            ys = [getattr(s, ykey) for s in series]
-            ax.plot(
-                kappas,
-                ys,
-                "o-",
-                color=cmap[i % 10],
-                lw=2,
-                ms=4,
-                label=f"L={L:.0f}m",
-            )
-        ax.legend(fontsize=7, loc="best")
-
-    ax = axes[0, 0]
-    _series(ax, "mean_min_ttc")
-    ax.axhline(TTC_TAU, color="crimson", ls="--", lw=1)
-    ax.set_xlabel("kappa")
-    ax.set_ylabel("mean min-TTC")
-    ax.set_title("Mean min-TTC")
-    ax.grid(True, alpha=0.3)
-
-    ax = axes[0, 1]
-    _series(ax, "pct_unsafe")
-    ax.set_xlabel("kappa")
-    ax.set_ylabel("%")
-    ax.set_title(f"% TTC < {TTC_TAU}s")
-    ax.grid(True, alpha=0.3)
-
-    ax = axes[0, 2]
-    _series(ax, "tit")
-    ax.set_xlabel("kappa")
-    ax.set_ylabel("TIT")
-    ax.set_title("TIT")
-    ax.grid(True, alpha=0.3)
-
-    ax = axes[1, 0]
-    _series(ax, "max_drac")
-    ax.axhline(DRAC_SAFE, color="crimson", ls="--", lw=1)
-    ax.set_xlabel("kappa")
-    ax.set_ylabel("max DRAC")
-    ax.set_title("Max DRAC")
-    ax.grid(True, alpha=0.3)
-
-    ax = axes[1, 1]
-    _series(ax, "max_btn")
-    ax.axhline(1.0, color="crimson", ls="--", lw=1)
-    ax.set_xlabel("kappa")
-    ax.set_ylabel("max BTN")
-    ax.set_title(f"Max BTN Bmax={B_MAX}")
-    ax.grid(True, alpha=0.3)
-
-    ax = axes[1, 2]
-    _series(ax, "min_gap_m")
-    ax.axhline(0.0, color="crimson", ls=":", lw=1.5)
-    ax.set_xlabel("kappa")
-    ax.set_ylabel("min gap m")
-    ax.set_title("Min gap")
-    ax.grid(True, alpha=0.3)
-
-    plt.tight_layout()
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out_path, dpi=150, bbox_inches="tight")
-    plt.close(fig)
-    return out_path.resolve()
-
 
 def _save_csv_single(results: list[ScenarioSafety], out_path: Path) -> Path:
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -428,39 +337,6 @@ def _save_csv_single(results: list[ScenarioSafety], out_path: Path) -> Path:
             w.writerow(
                 [
                     str(i),
-                    f"{r.mean_min_ttc:.4f}",
-                    f"{r.pct_unsafe:.2f}",
-                    f"{r.max_drac:.4f}",
-                    f"{r.max_btn:.4f}",
-                    f"{r.tit:.4f}",
-                    f"{r.min_gap_m:.4f}",
-                ]
-            )
-    return out_path.resolve()
-
-
-def _save_csv_synthetic(results: list[ScenarioSafety], out_path: Path) -> Path:
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    rows = sorted(results, key=lambda r: (r.merge_length, r.curvature))
-    with open(out_path, "w", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(
-            [
-                "merge_length_m",
-                "curvature",
-                "mean_min_ttc_s",
-                "pct_unsafe",
-                "max_drac_ms2",
-                "max_btn",
-                "tit_s2",
-                "min_gap_m",
-            ]
-        )
-        for r in rows:
-            w.writerow(
-                [
-                    f"{r.merge_length:.3f}",
-                    f"{r.curvature:.3f}",
                     f"{r.mean_min_ttc:.4f}",
                     f"{r.pct_unsafe:.2f}",
                     f"{r.max_drac:.4f}",
@@ -615,82 +491,6 @@ def _folder_case(cfg: dict[str, Any], cfg_path: Path) -> None:
         )
 
 
-def _synthetic_case(cfg: dict[str, Any], cfg_path: Path) -> None:
-    from merge_scenario import build_scenario, merge_viewport_xy
-
-    syn = cfg["synthetic"]
-    sumo_cfg = cfg["sumo"]
-    steps = int(sumo_cfg["steps"])
-    mode = str(sumo_cfg["mode"])
-    if mode != "random":
-        raise ValueError("synthetic scenarios require sumo.mode: random (SUMO generates traffic).")
-
-    out_root_parent = _output_run_root(cfg, cfg_path)
-    out_cfg = cfg["output"]
-    name_base = out_cfg.get("name") or out_cfg.get("subfolder") or "synthetic_sweep"
-    leaf = _run_leaf_name(cfg, base=str(name_base), steps=steps)
-    out_root = out_root_parent / leaf
-    _ensure_dir(out_root, bool(out_cfg.get("clean")))
-    print(f"Output directory: {out_root.resolve()}")
-
-    plot_cfg = cfg["plot"]
-    results: list[ScenarioSafety] = []
-
-    for merge_length in syn["merge_lengths"]:
-        for kappa in syn["curvatures"]:
-            tag = f"merge_L{float(merge_length):g}_k{float(kappa):g}"
-            run_dir = out_root / tag
-            run_dir.mkdir(parents=True, exist_ok=True)
-
-            base = build_scenario(
-                merge_length=float(merge_length),
-                curvature=float(kappa),
-                n_main_vehicles=int(syn["n_main_vehicles"]),
-                n_ramp_vehicles=int(syn["n_ramp_vehicles"]),
-                main_speed=float(syn["main_speed"]),
-                ramp_speed=float(syn["ramp_speed"]),
-            )
-            sim_scenario = _run_sumo(
-                base, mode="random", cr_xml_path=None, steps=steps, sumo=sumo_cfg
-            )
-            limits = merge_viewport_xy(float(merge_length))
-
-            _artifacts(
-                sim_scenario,
-                run_dir,
-                title_prefix=tag,
-                steps=steps,
-                plot_cfg=plot_cfg,
-                art=cfg["artifacts"],
-                limits=limits,
-            )
-
-            if cfg["metrics"]["enabled"]:
-                frames = compute_metrics(sim_scenario, car_length=4.7)
-                safety = aggregate(
-                    float(kappa),
-                    frames,
-                    sim_scenario.dt,
-                    merge_length=float(merge_length),
-                )
-                results.append(safety)
-                mcfg = cfg["metrics"]
-                _save_csv_synthetic([safety], run_dir / mcfg["csv_name"])
-                _plot_metrics_single(
-                    [safety],
-                    run_dir / mcfg["plot_name"],
-                    figsize=tuple(float(x) for x in plot_cfg["figsize_in"]),
-                )
-
-    if cfg["metrics"]["enabled"] and cfg["metrics"].get("aggregate_synthetic") and len(results) > 1:
-        mcfg = cfg["metrics"]
-        _plot_metrics_synthetic_multi(
-            results,
-            out_root / mcfg["aggregate_plot_name"],
-            figsize=tuple(float(x) for x in plot_cfg["figsize_in"]),
-        )
-        _save_csv_synthetic(results, out_root / mcfg["aggregate_csv_name"])
-
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Run SUMO + CommonRoad from YAML config.")
@@ -702,10 +502,10 @@ def main(argv: list[str] | None = None) -> int:
     kind = str(cfg["scenario"]["kind"]).lower()
     if kind == "folder":
         _folder_case(cfg, cfg_path)
-    elif kind == "synthetic":
-        _synthetic_case(cfg, cfg_path)
     else:
-        raise ValueError(f"Unknown scenario.kind: {cfg['scenario']['kind']!r}")
+        raise ValueError(
+            "Only scenario.kind: folder is supported (synthetic merge sweep was removed)."
+        )
 
     return 0
 

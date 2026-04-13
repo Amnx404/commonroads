@@ -10,7 +10,12 @@ from commonroad_sumo.sumolib.sumo_project import SumoProject
 
 
 class ScaledRandomDemandCalculator(RandomDemandCalculator):
-    """Same O/D matrix as RandomDemandCalculator, but scales spawn intensity."""
+    """Same O/D matrix as RandomDemandCalculator; tune SUMO flow headways.
+
+    commonroad_sumo passes this value into SUMO period=exp(...) as the mean
+    inter-departure time in seconds (larger -> sparser). random_density_scale > 1
+    divides that mean -> denser traffic.
+    """
 
     def __init__(self, scenario: Scenario, seed: int, density_scale: float) -> None:
         super().__init__(scenario, seed)
@@ -22,11 +27,11 @@ class ScaledRandomDemandCalculator(RandomDemandCalculator):
         if (start_lanelet_id, end_lanelet_id) not in self._od_spawn_probability_matrix:
             return 0.0
         raw = self._od_spawn_probability_matrix[(start_lanelet_id, end_lanelet_id)]
-        return round(raw * self._density_scale, 4)
+        return round(raw / self._density_scale, 4)
 
 
 class ScaledRandomTrafficGenerator(RandomTrafficGenerator):
-    """RandomTrafficGenerator with configurable traffic density (spawn-rate multiplier)."""
+    """RandomTrafficGenerator with density_scale > 1 for denser random traffic."""
 
     def __init__(
         self,
