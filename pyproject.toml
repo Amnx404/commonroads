@@ -1,0 +1,24 @@
+[project]
+name = "commonroads"
+version = "0.1.0"
+description = "CommonRoad merge scenario experiments"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "commonroad-io>=2024.3",
+    "commonroad-sumo>=2025.1.4",
+    "eclipse-sumo>=1.26.0",
+    "matplotlib>=3.8",
+    "numpy>=1.26",
+    "pillow>=10.0",
+    "pyyaml>=6.0",
+    "scipy>=1.11",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.29",
+]
+
+[tool.uv]
+default-groups = ["dev"]

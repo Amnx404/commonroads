@@ -1,2 +1,5 @@
 # Generated simulation artifacts
 outputs/
+
+# uv / Python environment
+.venv/

@@ -1,0 +1,19 @@
+﻿scenario:
+  kind: synthetic
+synthetic:
+  merge_lengths: [100.0]
+  curvatures: [0.2]
+  n_main_vehicles: 0
+  n_ramp_vehicles: 0
+sumo:
+  mode: random
+  steps: 50
+output:
+  dir: outputs/_smoke_run
+  subfolder: smoke
+  clean: true
+artifacts:
+  gif: false
+metrics:
+  enabled: true
+  aggregate_synthetic: false

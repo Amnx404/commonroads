@@ -1,0 +1,45 @@
+﻿# SUMO + CommonRoad using the cropped Frankfurt map.
+# Paths are relative to this YAML file's directory (repo root).
+# Windows: if commonroad_sumo raises UnicodeDecodeError, set UTF-8 before starting Python, e.g.
+#   PowerShell:  $env:PYTHONUTF8='1'; uv run python run.py config.frankfurt_shorter.yaml
+
+scenario:
+  kind: folder
+  cr_xml: scenarios/DEU_Frankfurt-34_11_I-1/DEU_Frankfurt-34-shorter.cr.xml
+  patch_incoming: true
+
+# random: SUMO spawns traffic on the lane network loaded from this CR file (recommended for cropped maps).
+# bundled: uses DEU_Frankfurt-34_11_I-1.sumo.cfg + .net.xml + .vehicle.rou.xml next to the XML
+#          (predefined routes target the full network; may not match a heavy crop).
+sumo:
+  mode: random
+  steps: 1000
+  # >1.0 increases random-mode flow spawn rates (denser traffic).
+  random_density_scale: 2.5
+  random_seed: 1234
+
+output:
+  dir: outputs/run
+  group: frankfurt_shorter
+  name: DEU_Frankfurt-34-shorter
+  clean: false
+
+plot:
+  figsize_in: [16.0, 6.0]
+  dpi: 150
+  vertical_scale: 10.0
+  view_fraction: null
+  gif_target_frames: 72
+  gif_fps: 12.0
+  gif_dpi: 85
+
+artifacts:
+  lanes_png: true
+  three_times_png: true
+  gif: true
+
+metrics:
+  enabled: true
+  csv_name: metrics.csv
+  plot_name: metrics.png
+  aggregate_synthetic: false
