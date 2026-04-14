@@ -1,0 +1,59 @@
+﻿# SUMO + CommonRoad config for toy_map (4 km, 2->3->2 merge pattern).
+# Paths are relative to this YAML file (repo root).
+
+scenario:
+  kind: folder
+  cr_xml: scenarios/toy_map/toy_map.cr.xml
+  patch_incoming: false
+  toy_map_generation:
+    enabled: true
+    # output_cr_xml: null  # leave null/omit for sweep – each combo gets its own auto-named file
+    # x where zipper merge begins (3-lane section ends).
+    # Comma-separated → one run per combination with all other params.
+    ramp_merge_start_x: 1220, 1300, 1500, 2800
+    # fixed taper length appended after ramp_merge_start_x.
+    ramp_taper_length: 20, 100, 200
+    # Positive pushes ramp outward before it turns back to merge.
+    ramp_outward_curve: 0, 10, 50, 100
+
+
+simulation:
+  n_runs: 100
+  parallel_workers: null
+
+sumo:
+  mode: random
+  steps: 1500
+  random_seed: 1234
+  # vehicles per km of lane - higher = denser traffic
+  max_veh_per_km: 3
+  # multiplier on top of max_veh_per_km (>1 = denser, <1 = sparser)
+  random_density_scale: 1
+
+output:
+  dir: outputs/run
+  group: toy_map
+  name: toy_map_4km
+  clean: false
+
+plot:
+  figsize_in: [18.0, 6.0]
+  dpi: 150
+  vertical_scale: 6.0
+  view_fraction: null
+  gif_target_frames: 240
+  gif_fps: 8.0
+  gif_dpi: 240
+
+artifacts:
+  lanes_png: true
+  three_times_png: true
+  gif: true
+
+metrics:
+  enabled: true
+  csv_name: metrics.csv
+  plot_name: metrics.png
+  runs_metrics_xml: runs_metrics.xml
+  summary_stats_file: summary_stats.csv
+

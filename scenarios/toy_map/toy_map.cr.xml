@@ -1,0 +1,165 @@
+﻿<?xml version='1.0' encoding='UTF-8'?>
+<commonRoad timeStepSize="0.1" commonRoadVersion="2020a" author="commonroads" affiliation="" source="" benchmarkID="ZAM_ToyMap-1_1_T-1" date="2026-04-13">
+  <location>
+    <geoNameId>-999</geoNameId>
+    <gpsLatitude>0.0</gpsLatitude>
+    <gpsLongitude>0.0</gpsLongitude>
+  </location>
+  <scenarioTags>
+    <lane_following/>
+    <merging_lanes/>
+    <no_oncoming_traffic/>
+  </scenarioTags>
+
+  <!-- Left through lane -->
+  <lanelet id="1">
+    <leftBound><point><x>0.0</x><y>6.0</y></point><point><x>1200.0</x><y>6.0</y></point></leftBound>
+    <rightBound><point><x>0.0</x><y>2.0</y></point><point><x>1200.0</x><y>2.0</y></point></rightBound>
+    <successor ref="2"/>
+    <adjacentRight ref="4" drivingDir="same"/>
+    <laneletType>unknown</laneletType>
+  </lanelet>
+
+  <lanelet id="2">
+    <leftBound><point><x>1200.0</x><y>6.0</y></point><point><x>2800.0</x><y>6.0</y></point></leftBound>
+    <rightBound><point><x>1200.0</x><y>2.0</y></point><point><x>2800.0</x><y>2.0</y></point></rightBound>
+    <predecessor ref="1"/>
+    <successor ref="10"/>
+    <adjacentRight ref="5" drivingDir="same"/>
+    <laneletType>unknown</laneletType>
+  </lanelet>
+
+  <lanelet id="10">
+    <leftBound><point><x>2800.0</x><y>6.0</y></point><point><x>3280.0</x><y>6.0</y></point></leftBound>
+    <rightBound><point><x>2800.0</x><y>2.0</y></point><point><x>3280.0</x><y>2.0</y></point></rightBound>
+    <predecessor ref="2"/>
+    <successor ref="3"/>
+    <adjacentRight ref="11" drivingDir="same"/>
+    <laneletType>unknown</laneletType>
+  </lanelet>
+
+  <lanelet id="3">
+    <leftBound><point><x>3280.0</x><y>6.0</y></point><point><x>4000.0</x><y>6.0</y></point></leftBound>
+    <rightBound><point><x>3280.0</x><y>2.0</y></point><point><x>4000.0</x><y>2.0</y></point></rightBound>
+    <predecessor ref="10"/>
+    <adjacentRight ref="6" drivingDir="same"/>
+    <laneletType>unknown</laneletType>
+  </lanelet>
+
+  <!-- Right through lane (becomes middle lane while auxiliary exists) -->
+  <lanelet id="4">
+    <leftBound><point><x>0.0</x><y>2.0</y></point><point><x>1200.0</x><y>2.0</y></point></leftBound>
+    <rightBound><point><x>0.0</x><y>-2.0</y></point><point><x>1200.0</x><y>-2.0</y></point></rightBound>
+    <successor ref="5"/>
+    <adjacentLeft ref="1" drivingDir="same"/>
+    <laneletType>unknown</laneletType>
+  </lanelet>
+
+  <lanelet id="5">
+    <leftBound><point><x>1200.0</x><y>2.0</y></point><point><x>2800.0</x><y>2.0</y></point></leftBound>
+    <rightBound><point><x>1200.0</x><y>-2.0</y></point><point><x>2800.0</x><y>-2.0</y></point></rightBound>
+    <predecessor ref="4"/>
+    <successor ref="11"/>
+    <adjacentLeft ref="2" drivingDir="same"/>
+    <adjacentRight ref="8" drivingDir="same"/>
+    <laneletType>unknown</laneletType>
+  </lanelet>
+
+  <lanelet id="11">
+    <leftBound><point><x>2800.0</x><y>2.0</y></point><point><x>3280.0</x><y>2.0</y></point></leftBound>
+    <rightBound><point><x>2800.0</x><y>-2.0</y></point><point><x>3280.0</x><y>-2.0</y></point></rightBound>
+    <predecessor ref="5"/>
+    <successor ref="6"/>
+    <adjacentLeft ref="10" drivingDir="same"/>
+    <adjacentRight ref="9" drivingDir="same"/>
+    <laneletType>unknown</laneletType>
+  </lanelet>
+
+  <lanelet id="6">
+    <leftBound><point><x>3280.0</x><y>2.0</y></point><point><x>4000.0</x><y>2.0</y></point></leftBound>
+    <rightBound><point><x>3280.0</x><y>-2.0</y></point><point><x>4000.0</x><y>-2.0</y></point></rightBound>
+    <predecessor ref="11"/>
+    <predecessor ref="9"/>
+    <adjacentLeft ref="3" drivingDir="same"/>
+    <laneletType>unknown</laneletType>
+  </lanelet>
+
+  <!-- Incoming ramp creates temporary third lane -->
+  <lanelet id="7">
+    <leftBound>
+      <point><x>0.0</x><y>-6.8</y></point>
+      <point><x>240.0</x><y>-6.6</y></point>
+      <point><x>480.0</x><y>-6.2</y></point>
+      <point><x>720.0</x><y>-5.6</y></point>
+      <point><x>960.0</x><y>-4.8</y></point>
+      <point><x>1200.0</x><y>-2.0</y></point>
+    </leftBound>
+    <rightBound>
+      <point><x>0.0</x><y>-10.8</y></point>
+      <point><x>240.0</x><y>-10.6</y></point>
+      <point><x>480.0</x><y>-10.2</y></point>
+      <point><x>720.0</x><y>-9.6</y></point>
+      <point><x>960.0</x><y>-8.8</y></point>
+      <point><x>1200.0</x><y>-6.0</y></point>
+    </rightBound>
+    <successor ref="8"/>
+    <laneletType>unknown</laneletType>
+  </lanelet>
+
+  <lanelet id="8">
+    <leftBound><point><x>1200.0</x><y>-2.0</y></point><point><x>2800.0</x><y>-2.0</y></point></leftBound>
+    <rightBound><point><x>1200.0</x><y>-6.0</y></point><point><x>2800.0</x><y>-6.0</y></point></rightBound>
+    <predecessor ref="7"/>
+    <successor ref="9"/>
+    <adjacentLeft ref="5" drivingDir="same"/>
+    <laneletType>unknown</laneletType>
+  </lanelet>
+
+  <lanelet id="9">
+    <leftBound>
+      <point><x>2800.0</x><y>-2.0</y></point>
+      <point><x>3040.0</x><y>-1.8</y></point>
+      <point><x>3200.0</x><y>-1.2</y></point>
+      <point><x>3280.0</x><y>2.0</y></point>
+    </leftBound>
+    <rightBound>
+      <point><x>2800.0</x><y>-6.0</y></point>
+      <point><x>3040.0</x><y>-4.6</y></point>
+      <point><x>3200.0</x><y>-3.0</y></point>
+      <point><x>3280.0</x><y>-2.0</y></point>
+    </rightBound>
+    <predecessor ref="8"/>
+    <successor ref="6"/>
+    <adjacentLeft ref="11" drivingDir="same"/>
+    <laneletType>unknown</laneletType>
+  </lanelet>
+
+  <planningProblem id="1">
+    <initialState>
+      <position><point><x>80.0</x><y>0.0</y></point></position>
+      <orientation><exact>0.0</exact></orientation>
+      <time><exact>0</exact></time>
+      <velocity><exact>20.0</exact></velocity>
+      <yawRate><exact>0.0</exact></yawRate>
+      <slipAngle><exact>0.0</exact></slipAngle>
+    </initialState>
+    <goalState>
+      <position>
+        <rectangle>
+          <length>12.0</length>
+          <width>3.5</width>
+          <orientation>0.0</orientation>
+          <center><x>3800.0</x><y>0.0</y></center>
+        </rectangle>
+      </position>
+      <orientation>
+        <intervalStart>-0.17453</intervalStart>
+        <intervalEnd>0.17453</intervalEnd>
+      </orientation>
+      <time>
+        <intervalStart>0</intervalStart>
+        <intervalEnd>220</intervalEnd>
+      </time>
+    </goalState>
+  </planningProblem>
+</commonRoad>

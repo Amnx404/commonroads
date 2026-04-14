@@ -215,7 +215,7 @@ def build_parser():
     v.add_argument("--lanes-only", action="store_true")
     v.add_argument("--time-step", type=int, default=0)
     v.add_argument("--figsize", type=float, nargs=2, default=(16.0, 6.0))
-    v.add_argument("--dpi", type=int, default=150)
+    v.add_argument("--dpi", type=int, default=500)
     v.add_argument("--margin", type=float, default=12.0)
     v.add_argument("--view-fraction", type=float, default=None)
     v.add_argument("--limits-box", type=float, nargs=4, metavar=("X1", "Y1", "X2", "Y2"), default=None)

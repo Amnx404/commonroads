@@ -4,11 +4,26 @@ scenario:
   kind: folder
   cr_xml: path/to/scenario.cr.xml
   patch_incoming: true
+  # Optional: generate a toy-map variant before simulation.
+  toy_map_generation:
+    enabled: false
+    output_cr_xml: null
+    # x-coordinate where zipper merge begins (3-lane section ends).
+    ramp_merge_start_x: 2800.0
+    # fixed zipper/taper length appended after ramp_merge_start_x.
+    ramp_taper_length: 480.0
+    # Positive values push the ramp outward (more negative y) before merging.
+    ramp_outward_curve: 0.0
+
+simulation:
+  n_runs: 1
+  # null = auto (min(8, CPU, n_runs-1)); 1 = sequential extra runs
+  parallel_workers: null
 
 sumo:
   mode: bundled   # bundled | random
   steps: 300
-  # random-only: random_density_scale (>1 = denser), random_seed, random_map_matching_delta
+  # random-only: use SUMO/commonroad defaults for random traffic generation
 
 output:
   dir: outputs/run
@@ -37,3 +52,9 @@ metrics:
   enabled: true
   csv_name: metrics.csv
   plot_name: metrics.png
+  runs_metrics_xml: runs_metrics.xml
+  summary_stats_file: summary_stats.csv
+
+
+
+

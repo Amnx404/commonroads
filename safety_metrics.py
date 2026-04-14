@@ -93,13 +93,16 @@ def compute_metrics(scenario: Scenario, car_length: float = 4.7) -> list[FrameMe
     """
     obstacles = list(scenario.dynamic_obstacles)
     dt        = scenario.dt
-    n_steps   = max(
-        max(s.time_step for obs in obstacles
-            for s in (list(obs.prediction.trajectory.state_list)
-                      if obs.prediction else [])
-            + [obs.initial_state]) + 1,
-        1,
-    )
+    if not obstacles:
+        n_steps = 1
+    else:
+        n_steps   = max(
+            max(s.time_step for obs in obstacles
+                for s in (list(obs.prediction.trajectory.state_list)
+                          if obs.prediction else [])
+                + [obs.initial_state]) + 1,
+            1,
+        )
     results: list[FrameMetrics] = []
 
     for t in range(n_steps):
