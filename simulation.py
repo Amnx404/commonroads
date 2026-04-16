@@ -30,8 +30,8 @@ class SimResult:
 def run_simulation(
     merge_length: float = 120.0,
     curvature:    float = 0.5,
-    n_main:       int   = 3,
-    n_ramp:       int   = 2,
+    n_main:       int   = 6,    # per lane (3 lanes total → 18 main vehicles)
+    n_ramp:       int   = 3,
     main_speed:   float = 28.0,
     ramp_speed:   float = 22.0,
 ) -> SimResult:

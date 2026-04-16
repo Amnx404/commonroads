@@ -164,7 +164,16 @@ def score_design(label: str, sim: SimResult) -> DesignScore:
 
         for i in range(len(ids)):
             for j in range(i + 1, len(ids)):
-                m = _pair_metrics(states[ids[i]], states[ids[j]])
+                sa_ij = states[ids[i]]
+                sb_ij = states[ids[j]]
+                # Skip pairs in completely separate lanes: vehicles in parallel
+                # lanes are laterally offset by ≥4 m and never collide; only
+                # compute metrics when vehicles share a lane or are actively
+                # merging (lateral gap < one lane width = 4 m).
+                dy = abs(float(sa_ij.position[1]) - float(sb_ij.position[1]))
+                if dy > 3.5:
+                    continue
+                m = _pair_metrics(sa_ij, sb_ij)
                 frame_ttcs.append(m["ttc"])
                 frame_dracs.append(m["drac"])
                 frame_btns.append(m["btn"])

@@ -117,7 +117,14 @@ def compute_metrics(scenario: Scenario) -> list[FrameMetrics]:
     dt        = scenario.dt
     results   = []
 
-    for t in range(int(scenario.dt * 0  ) , 300):   # up to 300 steps
+    # Determine actual timestep range from obstacle trajectories
+    max_t = 0
+    for obs in obstacles:
+        if obs.prediction:
+            for s in obs.prediction.trajectory.state_list:
+                max_t = max(max_t, s.time_step)
+
+    for t in range(max_t + 1):
         frame = FrameMetrics(time_step=t, time_s=t * dt)
 
         # Collect states at this step
@@ -135,6 +142,11 @@ def compute_metrics(scenario: Scenario) -> list[FrameMetrics]:
 
                 pos_a = np.array(sa.position)
                 pos_b = np.array(sb.position)
+
+                # Skip vehicles in completely separate parallel lanes
+                # (lateral gap ≥ one lane width = 4 m means no collision risk)
+                if abs(pos_a[1] - pos_b[1]) > 3.5:
+                    continue
                 gap = max(float(np.linalg.norm(pos_b - pos_a)) - 4.7, MIN_GAP)
 
                 cs = _closing_speed(

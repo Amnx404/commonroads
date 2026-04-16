@@ -3,9 +3,12 @@ idm.py
 ======
 Intelligent Driver Model (IDM) car-following simulation.
 
-Uses world-x (metres, increasing rightward) as the common position
-coordinate for all leader-finding comparisons, avoiding the arc-length
-origin mismatch between the ramp path and the main-lane path.
+Supports multiple main lanes.  Each main vehicle follows only vehicles in the
+same lane.  Ramp vehicles follow ramp-mates via arc-length and anticipate the
+lane-0 main vehicles near the merge end (zip-merge logic).
+
+Uses world-x (metres, increasing rightward) as the common spatial coordinate
+for all leader-finding comparisons.
 """
 from __future__ import annotations
 
@@ -75,10 +78,11 @@ class _Path:
 class VehicleState:
     vid:          int
     is_ramp:      bool
-    arc_s:        float          # arc-length along own path (ramp or main)
-    v:            float          # speed (m/s)
-    v0:           float          # desired speed (m/s)
-    merged:       bool = False   # True once ramp vehicle finishes merging
+    lane_id:      int              # index into main_paths; 0 = rightmost/merge lane
+    arc_s:        float            # arc-length along own path
+    v:            float            # speed (m/s)
+    v0:           float            # desired speed (m/s)
+    merged:       bool = False     # True once ramp vehicle transitions to main lane
 
     positions:    list = field(default_factory=list)
     orientations: list = field(default_factory=list)
@@ -88,59 +92,62 @@ class VehicleState:
 
 class RampMergeSimulator:
     """
-    IDM simulation for a highway merge.
+    IDM simulation for a multi-lane highway merge.
 
-    All spatial comparisons use world-x so ramp and main-lane
-    vehicles share a single consistent coordinate.
+    main_paths : list of _Path, one per main lane.
+                 index 0 = rightmost lane (the one the ramp merges into).
+    ramp_path  : _Path for the on-ramp (Bezier curve).
     """
 
     def __init__(
         self,
+        main_paths:   list,        # list[_Path], index = lane_id
         ramp_path:    _Path,
-        main_path:    _Path,
         dt:           float = 0.1,
-        steps:        int   = 300,
-        merge_x:      float = 120.0,   # world-x of merge end
+        steps:        int   = 200,
+        merge_x:      float = 120.0,
     ):
-        self.ramp_path = ramp_path
-        self.main_path = main_path
-        self.dt        = dt
-        self.steps     = steps
-        self.merge_x   = merge_x   # world-x at which ramp meets main lane
+        self.main_paths = main_paths
+        self.ramp_path  = ramp_path
+        self.dt         = dt
+        self.steps      = steps
+        self.merge_x    = merge_x
         self._vehicles: list[VehicleState] = []
 
     # ── add vehicles ──────────────────────────────────────────────────────
 
-    def add_main_vehicle(self, vid: int, x0: float, v0: float, v_desired: float):
-        """x0 = initial world-x position."""
-        arc_s = self.main_path.s_at_x(x0)
-        vs = VehicleState(vid=vid, is_ramp=False, arc_s=arc_s, v=v0, v0=v_desired, merged=True)
+    def add_main_vehicle(self, vid: int, lane_id: int, x0: float,
+                         v0: float, v_desired: float):
+        """x0 = initial world-x; lane_id = index into main_paths."""
+        arc_s = self.main_paths[lane_id].s_at_x(x0)
+        vs = VehicleState(vid=vid, is_ramp=False, lane_id=lane_id,
+                          arc_s=arc_s, v=v0, v0=v_desired, merged=True)
         self._vehicles.append(vs)
 
     def add_ramp_vehicle(self, vid: int, ramp_s0: float, v0: float, v_desired: float):
-        """ramp_s0 = initial arc-length position along the ramp path."""
-        vs = VehicleState(vid=vid, is_ramp=True, arc_s=ramp_s0, v=v0, v0=v_desired, merged=False)
+        """ramp_s0 = initial arc-length along the ramp.  Merges into lane 0."""
+        vs = VehicleState(vid=vid, is_ramp=True, lane_id=0,
+                          arc_s=ramp_s0, v=v0, v0=v_desired, merged=False)
         self._vehicles.append(vs)
 
-    # ── world-x helper ────────────────────────────────────────────────────
+    # ── path helpers ──────────────────────────────────────────────────────
+
+    def _get_path(self, vs: VehicleState) -> _Path:
+        if vs.is_ramp and not vs.merged:
+            return self.ramp_path
+        return self.main_paths[vs.lane_id]
 
     def _world_x(self, vs: VehicleState) -> float:
-        """Current world-x of a vehicle's front bumper centre."""
-        if vs.is_ramp and not vs.merged:
-            xy, _ = self.ramp_path.at(vs.arc_s)
-            return float(xy[0])
-        else:
-            xy, _ = self.main_path.at(vs.arc_s)
-            return float(xy[0])
+        xy, _ = self._get_path(vs).at(vs.arc_s)
+        return float(xy[0])
 
     # ── position recording ────────────────────────────────────────────────
 
     def _record(self, vs: VehicleState):
-        if vs.is_ramp and not vs.merged:
-            xy, hdg = self.ramp_path.at(vs.arc_s)
-        else:
-            xy, hdg = self.main_path.at(vs.arc_s)
-            hdg = 0.0
+        path = self._get_path(vs)
+        xy, hdg = path.at(vs.arc_s)
+        if not (vs.is_ramp and not vs.merged):
+            hdg = 0.0          # main-lane vehicles always face east
         vs.positions.append((float(xy[0]), float(xy[1])))
         vs.orientations.append(float(hdg))
 
@@ -148,12 +155,11 @@ class RampMergeSimulator:
 
     def _find_leader(self, ego: VehicleState) -> tuple[VehicleState | None, float, float]:
         """
-        Return (leader, gap_m, dv) for the most critical leader.
-        gap_m is the bumper-to-bumper gap in world-x metres.
-        dv is closing speed (positive = approaching).
+        Return (leader, gap_m, dv).
+        Main-lane vehicles only follow same-lane vehicles.
+        Ramp vehicles follow ramp-mates and use zip-merge anticipation.
         """
-        ego_x = self._world_x(ego)
-
+        ego_x    = self._world_x(ego)
         best_leader = None
         best_gap    = np.inf
 
@@ -161,24 +167,32 @@ class RampMergeSimulator:
             if other.vid == ego.vid:
                 continue
 
-            # Ramp vehicle that hasn't yet merged only counts as a leader
-            # for other ramp vehicles behind it on the same ramp.
+            # ── unmerged ramp vehicle ─────────────────────────────────────
             if other.is_ramp and not other.merged:
-                if not (ego.is_ramp and not ego.merged):
-                    continue   # don't follow unmerged ramp from main lane
-                # Both on ramp: pure arc-length comparison
-                if other.arc_s <= ego.arc_s:
-                    continue
-                g = other.arc_s - ego.arc_s - CAR_LEN
-                if g < best_gap:
-                    best_gap    = g
-                    best_leader = other
+                if ego.is_ramp and not ego.merged:
+                    # Same ramp: arc-length comparison
+                    if other.arc_s <= ego.arc_s:
+                        continue
+                    g = other.arc_s - ego.arc_s - CAR_LEN
+                    if g < best_gap:
+                        best_gap    = g
+                        best_leader = other
+                # Main-lane ego ignores unmerged ramp vehicles
                 continue
 
-            # Other is on main lane (or merged ramp)
+            # ── main-lane / merged vehicle ────────────────────────────────
+            # Ramp ego (not merged) does not follow main vehicles here;
+            # zip-merge anticipation is handled separately below.
+            if ego.is_ramp and not ego.merged:
+                continue
+
+            # Same-lane check for main-lane ego
+            if other.lane_id != ego.lane_id:
+                continue
+
             other_x = self._world_x(other)
             if other_x <= ego_x:
-                continue   # behind ego
+                continue
 
             g = other_x - ego_x - CAR_LEN
             if g < best_gap:
@@ -186,22 +200,17 @@ class RampMergeSimulator:
                 best_leader = other
 
         # ── zip-merge anticipation ────────────────────────────────────────
-        # Ramp vehicle near merge end: also check the main-lane vehicle that
-        # will be alongside / just behind at the merge point.
         if ego.is_ramp and not ego.merged:
             dist_to_merge = self.ramp_path.total - ego.arc_s
             if dist_to_merge <= MERGE_LOOKAHEAD:
                 t_arrive = dist_to_merge / max(ego.v, 0.1)
                 for other in self._vehicles:
-                    if other.is_ramp or other.vid == ego.vid:
+                    if other.is_ramp or other.lane_id != 0:
                         continue
                     other_x = self._world_x(other)
                     proj_x  = other_x + other.v * t_arrive
-                    # Gap between projected other and merge point
                     g_at_merge = proj_x - self.merge_x - CAR_LEN
                     if g_at_merge < 0:
-                        # Other will be at/behind merge end when ego arrives
-                        # — ego must slow to let it clear first.
                         effective_gap = dist_to_merge + max(g_at_merge, -CAR_LEN)
                         effective_gap = max(effective_gap, 0.5)
                         if effective_gap < best_gap:
@@ -211,20 +220,18 @@ class RampMergeSimulator:
         if best_leader is None:
             return None, np.inf, 0.0
 
-        # Compute closing speed
         dv = ego.v - best_leader.v
         return best_leader, max(best_gap, 0.01), dv
 
     # ── merge check ───────────────────────────────────────────────────────
 
     def _check_merge(self, vs: VehicleState):
-        """Transition ramp vehicle to main lane once it reaches the merge end."""
+        """Transition ramp vehicle to lane-0 main path at merge end."""
         if not vs.is_ramp or vs.merged:
             return
         if vs.arc_s >= self.ramp_path.total:
             vs.merged = True
-            # Switch arc_s to main-path arc at merge_x
-            vs.arc_s  = self.main_path.s_at_x(self.merge_x)
+            vs.arc_s  = self.main_paths[0].s_at_x(self.merge_x)
 
     # ── simulation step ───────────────────────────────────────────────────
 
@@ -253,9 +260,10 @@ class RampMergeSimulator:
 
 # ── factories ─────────────────────────────────────────────────────────────────
 
-def build_ramp_path(merge_length: float, y_ramp: float, curvature: float) -> _Path:
+def build_ramp_path(merge_length: float, y_ramp: float,
+                    y_main: float = 0.0, curvature: float = 0.5) -> _Path:
     from merge_scenario import bezier_merge_centerline
-    pts = bezier_merge_centerline(merge_length, y_ramp, 0.0, curvature, n=500)
+    pts = bezier_merge_centerline(merge_length, y_ramp, y_main, curvature, n=500)
     return _Path(pts)
 
 
